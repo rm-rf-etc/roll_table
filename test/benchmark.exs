@@ -1,35 +1,24 @@
 range = 1..1000
 
-table_t = RollTable.Tuples.new(3, 2)
-table_m = RollTable.Maps.new(3, 2)
+table_t = RollTable.Tuples.new(5, 100)
+table_m = RollTable.Maps.new(5, 100)
 
-table_b = %{
-  0 => %{0 => nil, 1 => nil},
-  1 => %{0 => nil, 1 => nil},
-  2 => %{0 => nil, 1 => nil},
-  length: 2,
-  width: 3
-}
+{:ok, tuples_agent} = Agent.start(fn -> table_t end)
+{:ok, maps_agent} = Agent.start(fn -> table_m end)
 
 Benchee.run(%{
-  "Manual update" => fn ->
-    for _ <- range do
-      put_in(table_b[0][1], table_b[0][0])
-      put_in(table_b[1][1], table_b[1][0])
-      put_in(table_b[2][1], table_b[2][0])
-      put_in(table_b[0][0], 5)
-      put_in(table_b[1][0], 5)
-      put_in(table_b[2][0], 5)
-    end
-  end,
   "RollTable.Tuples" => fn ->
-    for _ <- range do
-      RollTable.Tuples.roll(table_t, {1, 1, 1})
+    for n <- range do
+      Agent.update(tuples_agent, fn table ->
+        RollTable.Tuples.roll(table, {n + 1, n + 2, n + 3, n + 4, n + 5})
+      end)
     end
   end,
   "RollTable.Maps" => fn ->
-    for _ <- range do
-      RollTable.Maps.roll(table_m, {1, 1, 1})
+    for n <- range do
+      Agent.update(maps_agent, fn table ->
+        RollTable.Maps.roll(table, {n + 1, n + 2, n + 3, n + 4, n + 5})
+      end)
     end
   end
 })
